@@ -31,7 +31,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.gestures.Orientation
 import androidx.core.content.FileProvider
-import androidx.transition.Visibility
 import com.example.the_hat.backendClasses.Player
 import com.example.the_hat.backendClasses.dicts.Dict
 import com.example.the_hat.backendClasses.dicts.RandomList
@@ -43,6 +42,7 @@ import com.example.the_hat.backendClasses.games.GameByPair
 import com.example.the_hat.backendClasses.games.GameEveryoneWithEveryone
 import java.io.BufferedReader
 import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStreamReader
 
 
@@ -70,11 +70,28 @@ class MainActivity : ComponentActivity() {
 
     var context = this
 
+    fun copyMp3FromAssets(context: Context, assetFileName: String, targetFileName: String): File {
+        val assetManager = context.assets
+        val outFile = File(context.filesDir, targetFileName)
+
+        if (!outFile.exists()) {
+            assetManager.open(assetFileName).use { inputStream ->
+                FileOutputStream(outFile).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+        }
+
+        return outFile
+    }
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
         saveToFile(this, "easy_dict.txt", convertDictToText(openDictFromAss("dict_easy_sorted.txt")))
         saveToFile(this, "medium_dict.txt", convertDictToText(openDictFromAss("dict_mid_sorted.txt")))
         saveToFile(this, "hard_dict.txt", convertDictToText(openDictFromAss("dict_hard_sorted.txt")))
+        saveToFile(this, "end_sound.mp3", copyMp3FromAssets(this, "end_sound.mp3", "end_sound.mp3"))
+        saveToFile(this, "doneWord_sound.mp3", copyMp3FromAssets(this, "doneWord_sound.mp3", "doneWord_sound.mp3"))
+
         updateDicts()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -677,6 +694,14 @@ class MainActivity : ComponentActivity() {
     private fun saveToFile(context: Context, fileName: String, content: String) {
         context.openFileOutput(fileName, Context.MODE_PRIVATE).use { output ->
             output.write(content.toByteArray())
+        }
+    }
+
+    private fun saveToFile(context: Context, fileName: String, content: File) {
+        context.assets.open(fileName).use { inputStream ->
+            FileOutputStream(content).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
         }
     }
 
